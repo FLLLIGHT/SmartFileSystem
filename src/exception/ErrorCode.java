@@ -14,6 +14,7 @@ public class ErrorCode extends RuntimeException{
     static {
         ErrorCodeMap.put(IO_EXCEPTION, "IO exception");
         ErrorCodeMap.put(CHECKSUM_CHECK_FAILED, "block checksum check failed");
+
         ErrorCodeMap.put(UNKNOWN, "unknown");
     }
 

@@ -11,6 +11,7 @@ public interface File {
     default long pos(){
         return move(0, MOVE_CURR);
     }
+    //返回move后的位置
     long move(long offset, int where);
 
     //buffer

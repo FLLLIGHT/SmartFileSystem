@@ -47,7 +47,7 @@ public class BlockImpl implements Block {
 
     private void writeBlock(String blockManagerId, String suffix, byte[] content){
         String prefix = "out";
-        String filename = prefix +"/"+blockManagerId+"/"+id.parseId()+suffix;
+        String filename = prefix +"/BlockManager/"+blockManagerId+"/"+id.parseId()+suffix;
         FileUtils.create(filename);
         FileUtils.write(filename, content);
     }

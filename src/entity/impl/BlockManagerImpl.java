@@ -3,9 +3,11 @@ package entity.impl;
 import entity.Block;
 import entity.BlockManager;
 import entity.Id;
+import utils.FileUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
 
@@ -15,6 +17,8 @@ public class BlockManagerImpl implements BlockManager {
 
     public BlockManagerImpl(String idStr){
         this.id = new IdImpl(idStr);
+        //todo: 也不一定要生成，如果是索引时就不需要生成
+        generateIdCount();
         blockManagerMap = new HashMap<>();
     }
 
@@ -26,7 +30,7 @@ public class BlockManagerImpl implements BlockManager {
     @Override
     public Block newBlock(byte[] b) {
         int blockSize = getBlockSize();
-        String idStr = "";
+        String idStr = getAndUpdateNextAvailableId();
         Id id = new IdImpl(idStr);
         Block block = new BlockImpl(this, id, blockSize, b);
         blockManagerMap.put(id ,block);
@@ -43,15 +47,24 @@ public class BlockManagerImpl implements BlockManager {
     }
 
     private int getBlockSize() {
-        Properties properties = new Properties();
-        String blockSize = "";
-        try(InputStream is = this.getClass().getClassLoader().getResourceAsStream("file.properties");) {
-            properties.load(is);
-            blockSize = properties.getProperty("blockSize");
-        } catch (IOException e){
-            e.printStackTrace();
-        }
-        return Integer.parseInt(blockSize);
+        return Integer.parseInt(FileUtils.getProperty("blockSize"));
+    }
+
+    //todo: 持久化该manager的下一个可用id
+    private String getAndUpdateNextAvailableId(){
+        String prefix = "out";
+        String filename = prefix +"/BlockManager/"+id.parseId()+"/id.data";
+        String id = new String(FileUtils.readAll(filename));
+        FileUtils.update(filename, ((Integer.parseInt(id)+1)+"").getBytes());
+        return id;
+    }
+
+    private void generateIdCount(){
+        String prefix = "out";
+        String filename = prefix +"/BlockManager/"+id.parseId()+"/id.data";
+        FileUtils.create(filename);
+        String content = "0";
+        FileUtils.write(filename, content.getBytes());
     }
 
 //    public static void main(String args[]) throws IOException {

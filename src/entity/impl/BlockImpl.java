@@ -36,7 +36,9 @@ public class BlockImpl implements Block {
     @Override
     public byte[] read() {
         //todo: 读data数据
-        return new byte[0];
+        String prefix = "out";
+        String filename = prefix +"/BlockManager/"+blockManager.getId().parseId()+"/"+id.parseId()+".data";
+        return FileUtils.readAll(filename);
     }
 
     @Override
@@ -53,6 +55,6 @@ public class BlockImpl implements Block {
     }
 
     private String generateMeta(byte[] data, int blockSize){
-        return "size: "+blockSize+"\n"+"checksum: "+ SHA256Utils.getSHA256(data);
+        return "size:"+blockSize+"\n"+"checksum:"+ SHA256Utils.getSHA256(data);
     }
 }

@@ -41,6 +41,7 @@ public class FileImpl implements File {
         return new byte[0];
     }
 
+    //todo: 从文件的中间开始修改block，后面的全部需要改变
     @Override
     public void write(byte[] b) {
         int blockManagerNumber = Main.blockManagers.size();
@@ -62,12 +63,20 @@ public class FileImpl implements File {
 
     @Override
     public long pos() {
-        return 0;
+        return move(0, MOVE_CURR);
     }
 
     @Override
     public long move(long offset, int where) {
-        return 0;
+        //todo: 异常处理，指针位置大于文件大小
+        if(where==MOVE_CURR) {
+            currCursor += offset;
+        } else if(where==MOVE_HEAD) {
+            currCursor = offset;
+        } else if(where==MOVE_TAIL) {
+            currCursor = getBlockSize() - 1 + offset;
+        }
+        return currCursor;
     }
 
     @Override
@@ -77,6 +86,7 @@ public class FileImpl implements File {
 
     @Override
     public long size() {
+        //todo: 从meta中读文件大小
         return 0;
     }
 
@@ -96,6 +106,18 @@ public class FileImpl implements File {
     }
 
     private int getBlockSize() {
+        //todo: 当前配置文件中的block size大小，不一定是本文件的block size大小，本文件的block size大小要从meta读
         return Integer.parseInt(FileUtils.getProperty("blockSize"));
     }
+
+    private int getFileSize(){
+        //todo: 从file meta中读文件大小
+        return 0;
+    }
+
+    private void setFileMetaLogicBlock(int index){
+        //todo: 设置file meta中的logic block数据，一行一行设置
+    }
+
+    //todo: 为什么每个block（除最后）都要拉满：方便索引，直接可以计算出位置，不然不能直接通过位置计算出哪个logic block中
 }

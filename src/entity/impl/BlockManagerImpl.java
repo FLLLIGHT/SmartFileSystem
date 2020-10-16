@@ -50,7 +50,7 @@ public class BlockManagerImpl implements BlockManager {
         return Integer.parseInt(FileUtils.getProperty("blockSize"));
     }
 
-    //todo: 持久化该manager的下一个可用id
+    //持久化该manager的下一个可用id
     private String getAndUpdateNextAvailableId(){
         String prefix = "out";
         String filename = prefix +"/BlockManager/"+id.parseId()+"/id.data";

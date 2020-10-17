@@ -93,4 +93,12 @@ public class FileUtils {
     public static void writeMetaInfo(){
 
     }
+
+    public static boolean createDirectory(String filename){
+        File folder = new File(filename);
+        if(!folder.exists()||!folder.isDirectory()){
+            return folder.mkdirs();
+        }
+        return false;
+    }
 }

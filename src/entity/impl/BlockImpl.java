@@ -11,15 +11,17 @@ public class BlockImpl implements Block {
     private final BlockManager blockManager;
     private final Id id;
 
+    //索引已有的block
     public BlockImpl(BlockManager blockManager, Id id){
         this.blockManager = blockManager;
         this.id = id;
     }
 
-    public BlockImpl(BlockManager blockManager, Id id, int blockSize, byte[] data){
+    //初始化block（第一次持久化）
+    public BlockImpl(BlockManager blockManager, Id id, byte[] data){
         this.blockManager = blockManager;
         this.id = id;
-        writeBlock(blockManager.getId().toString(), ".meta", generateMeta(data, blockSize).getBytes());
+        writeBlock(blockManager.getId().toString(), ".meta", generateMeta(data).getBytes());
         writeBlock(blockManager.getId().toString(), ".data", data);
     }
 
@@ -44,8 +46,15 @@ public class BlockImpl implements Block {
 
     @Override
     public int blockSize() {
-        //todo: 不能存在这里，要放在meta里待读取
-        return 0;
+        String prefix = "out";
+        String filename = prefix +"/BlockManager/"+blockManager.getId().toString()+"/"+id.toString()+".meta";
+        return Integer.parseInt(FileUtils.getMetaInfo(filename).get("size"));
+    }
+
+    private String getChecksum(){
+        String prefix = "out";
+        String filename = prefix +"/BlockManager/"+blockManager.getId().toString()+"/"+id.toString()+".meta";
+        return FileUtils.getMetaInfo(filename).get("checksum");
     }
 
     private void writeBlock(String blockManagerId, String suffix, byte[] content){
@@ -55,7 +64,7 @@ public class BlockImpl implements Block {
         FileUtils.write(filename, content);
     }
 
-    private String generateMeta(byte[] data, int blockSize){
-        return "size:"+blockSize+"\n"+"checksum:"+ SHA256Utils.getSHA256(data);
+    private String generateMeta(byte[] data){
+        return "size:"+data.length+"\n"+"checksum:"+ SHA256Utils.getSHA256(data);
     }
 }

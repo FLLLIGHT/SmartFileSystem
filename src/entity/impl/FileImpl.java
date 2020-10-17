@@ -12,6 +12,7 @@ public class FileImpl implements File {
 
     private FileManager fileManager;
     private Id id;
+
     private long currCursor;
     private final int MOVE_CURR = 0;
     private final int MOVE_HEAD = 1;
@@ -19,12 +20,36 @@ public class FileImpl implements File {
     //todo: 如果在统一位置插入，则直接加在原来的后面
     //todo: key是插入的位置（cursor）
     //todo: 考虑在哪里初始化比较好
+    //为什么每个block（除最后）都要拉满：方便索引，直接可以计算出位置，不然不能直接通过位置计算出哪个logic block中
     private HashMap<Integer, Byte[]> buffer = new HashMap<>();
 
+    //索引已有的file
     public FileImpl(FileManager fileManager, Id id){
         this.fileManager = fileManager;
         this.id = id;
         this.currCursor = 0;
+    }
+
+    //新建file，初始并持久化meta文件
+    public FileImpl(FileManager fileManager, Id id, boolean newFile){
+        this.fileManager = fileManager;
+        this.id = id;
+        this.currCursor = 0;
+        HashMap<String, String> valMap = new HashMap<>();
+        valMap.put("size", "0");
+        //新建文件时的block size要从配置文件中读，之后从文件的meta中读，否则会冲突
+        valMap.put("block size", FileUtils.getProperty("blockSize"));
+        writeMeta(generateMeta(valMap).getBytes());
+    }
+
+    //复制文件
+    public FileImpl(FileManager fileManager, Id id, String copyFrom){
+        this.fileManager = fileManager;
+        this.id = id;
+        this.currCursor = 0;
+        System.out.println(fileManager.getFile(new IdImpl(copyFrom)));
+        HashMap<String, String> valMap = ((FileImpl)fileManager.getFile(new IdImpl(copyFrom))).getMetaInfo();
+        writeMeta(generateMeta(valMap).getBytes());
     }
 
     @Override
@@ -37,13 +62,11 @@ public class FileImpl implements File {
         return fileManager;
     }
 
-    //从startIndex位置开始读
+    //从startIndex的位置开始读length个字节的数据
     private byte[] read(int length, long startIndex){
-        System.out.println(length+"length");
         int blockSize = getBlockSize();
         int startBlockIndex = (int)(startIndex / blockSize);
         int endBlockIndex = (int)((startIndex + length - 1) / blockSize);
-        System.out.println(startIndex+":"+endBlockIndex);
         HashMap<String, String> metaInfo = getMetaInfo();
         byte[] data = new byte[length];
         int index = 0;
@@ -64,7 +87,6 @@ public class FileImpl implements File {
                 BlockManager blockManager = getBlockManagerById(logicBlock[0]);
                 Block block = blockManager.getBlock(new IdImpl(logicBlock[1]));
                 System.arraycopy(block.read(), start, data, index, blockSize-start);
-                System.out.println(new String(block.read()));
                 break;
             }
             index += (blockSize - start);
@@ -85,7 +107,6 @@ public class FileImpl implements File {
     //todo: 从文件的中间开始修改block，后面的全部需要改变
     @Override
     public void write(byte[] b) {
-
         if(getBufferSetting().equals("yes")){
             //写入hashmap中
             //如果写入指针的位置与原来相同，则直接加到原来的后面
@@ -98,16 +119,19 @@ public class FileImpl implements File {
             int totalSize = fileSize - blockUnchangedNumber * blockSize + b.length;
             //changedByte: 要更新的所有data
             byte[] changedData = new byte[totalSize];
-            byte[] oldData = read(fileSize-blockUnchangedNumber*blockSize, blockUnchangedNumber*blockSize);
-            System.arraycopy(oldData, 0, changedData, 0, (int)currCursor%blockSize);
-            System.arraycopy(b, 0, changedData, (int)currCursor%blockSize, b.length);
-            System.arraycopy(oldData, (int)currCursor%blockSize, changedData, (int)currCursor%blockSize+b.length, oldData.length-(int)currCursor%blockSize);
+            if(fileSize!=0) {
+                byte[] oldData = read(fileSize - blockUnchangedNumber * blockSize, blockUnchangedNumber * blockSize);
+                System.arraycopy(oldData, 0, changedData, 0, (int)currCursor%blockSize);
+                System.arraycopy(b, 0, changedData, (int)currCursor%blockSize, b.length);
+                System.arraycopy(oldData, (int)currCursor%blockSize, changedData, (int)currCursor%blockSize+b.length, oldData.length-(int)currCursor%blockSize);
+            }else{
+                System.arraycopy(b, 0, changedData, 0, b.length);
+            }
             write(changedData, blockUnchangedNumber);
         }
     }
 
     private void write(byte[] b, int startIndex){
-        int blockManagerNumber = Main.blockManagers.size();
         int duplicationNumber = getDuplicationNumber();
         int blockSize = getBlockSize();
         int blockNumber = (b.length-1) / blockSize + 1;
@@ -119,8 +143,7 @@ public class FileImpl implements File {
             to = Math.min(from + blockSize, b.length);
             StringBuilder sb = new StringBuilder();
             for(int j=0; j<duplicationNumber; j++){
-                int blockManagerIndex = getRandomNumber(blockManagerNumber);
-                BlockManager blockManager = Main.blockManagers.get(blockManagerIndex);
+                BlockManager blockManager = getRandomBlockManager();
                 Block block = blockManager.newBlock(Arrays.copyOfRange(b, from, to));
                 sb.append("[").append(blockManager.getId().toString()).append(",")
                         .append(block.getIndexId().toString()).append("]");
@@ -139,6 +162,7 @@ public class FileImpl implements File {
         writeMeta(metaInfo.getBytes());
     }
 
+    //更新meta数据
     private void writeMeta(byte[] content){
         String prefix = "out";
         String filename = prefix +"/FileManager/"+fileManager.getId().toString()+"/"+id.toString()+".meta";
@@ -164,7 +188,7 @@ public class FileImpl implements File {
         } else if(where==MOVE_HEAD) {
             currCursor = offset;
         } else if(where==MOVE_TAIL) {
-            currCursor = getBlockSize() - 1 + offset;
+            currCursor = getFileSize() + offset;
         }
         return currCursor;
     }
@@ -176,39 +200,52 @@ public class FileImpl implements File {
 
     @Override
     public long size() {
-        //todo: 从meta中读文件大小
-        return 0;
+        String prefix = "out";
+        String filename = prefix +"/FileManager/"+fileManager.getId().toString()+"/"+id.toString()+".meta";
+        return Long.parseLong(FileUtils.getMetaInfo(filename).get("size"));
     }
 
     @Override
     public void setSize(long newSize) {
-
+        long oldSize = size();
+        if(newSize>oldSize){
+            move(0, MOVE_TAIL);
+            write(new byte[(int)(newSize-oldSize)]);
+        }else if(newSize<oldSize){
+            int blockSize = getBlockSize();
+            int fileSize = getFileSize();
+            //从第blockUnchangedNumber个block(logic block)开始，就需要改了
+            int blockUnchangedNumber = (int)(newSize / blockSize);
+            //文件的总大小-不需要改的大小+新增的大小
+            int totalSize = (int)(newSize % blockSize);
+            //changedByte: 要更新的所有data
+            byte[] changedData = new byte[totalSize];
+            byte[] oldData = read(Math.min(blockSize, fileSize-blockUnchangedNumber * blockSize), blockUnchangedNumber * blockSize);
+            System.arraycopy(oldData, 0, changedData, 0, totalSize);
+            write(changedData, blockUnchangedNumber);
+        }
     }
 
-    private int getRandomNumber(int range){
-        Random random = new Random();
-        //range = 10 is 0~9
-        return random.nextInt(range);
-    }
-
+    //获取配置文件要求的副本数量
     private int getDuplicationNumber(){
         return Integer.parseInt(FileUtils.getProperty("duplicationNumber"));
     }
 
+    //当前配置文件中的block size大小，不一定是本文件的block size大小，本文件的block size大小要从meta读
     private int getBlockSize() {
-        //todo: 当前配置文件中的block size大小，不一定是本文件的block size大小，本文件的block size大小要从meta读
         String prefix = "out";
         String filename = prefix +"/FileManager/"+fileManager.getId().toString()+"/"+id.toString()+".meta";
         return Integer.parseInt(FileUtils.getMetaInfo(filename).get("block size"));
     }
 
+    //从file meta中读文件大小
     private int getFileSize(){
-        //todo: 从file meta中读文件大小
         String prefix = "out";
         String filename = prefix +"/FileManager/"+fileManager.getId().toString()+"/"+id.toString()+".meta";
         return Integer.parseInt(FileUtils.getMetaInfo(filename).get("size"));
     }
 
+    //获取解析后的meta文件
     private HashMap<String, String> getMetaInfo(){
         String prefix = "out";
         String filename = prefix +"/FileManager/"+fileManager.getId().toString()+"/"+id.toString()+".meta";
@@ -228,8 +265,13 @@ public class FileImpl implements File {
         return sb.toString();
     }
 
+    //解析logic blocks
+    //例如：
+    // 输入[BM1,2][BM2,23][BM3,17]
+    // 输出一个ArrayList，其中有3个String数组，每个数组的第一个元素是Block Manager的id，第二个元素是Block的id
     private List<String[]> getLogicBlocks(String logicBlocks){
         List<String[]> list = new ArrayList<>();
+        //解析[]中的内容
         Matcher matcher = Pattern.compile("\\[([^\\]]+)").matcher(logicBlocks);
         int pos = -1;
         while (matcher.find(pos+1)){
@@ -240,32 +282,15 @@ public class FileImpl implements File {
         return list;
     }
 
+    //从系统维护的block manager的列表中找到对应的block manager
     private BlockManager getBlockManagerById(String id){
-        for(BlockManager blockManager : Main.blockManagers){
-            if(blockManager.getId().toString().equals(id)){
-                return blockManager;
-            }
-        }
-        return null;
+        return Main.blockManagers.get(new IdImpl(id));
     }
 
-    //todo: 为什么每个block（除最后）都要拉满：方便索引，直接可以计算出位置，不然不能直接通过位置计算出哪个logic block中
-
-    public static void main(String args[]){
-//        String s = "[\"bm-01\",13][\"bm-02\",14][\"bm-03\",20]";
-//        List<String[]> list = getLogicBlocks(s);
-//        for(String[] ls : list){
-//            for(String ss : ls){
-//                System.out.println(ss);
-//            }
-//        }
-
-        String a = "aaaa";
-        String b = "bbbbb";
-        byte[] c = new byte[9];
-        byte[] aa = a.getBytes();
-        System.arraycopy(aa,0,c,0,a.length());
-        System.arraycopy(b.getBytes(),0,c,2,b.length());
-        System.out.println(new String(c));
+    //从系统维护的block manager的列表中随机找一个block manager
+    private BlockManager getRandomBlockManager(){
+        Random generator = new Random();
+        Object[] blockManagers = Main.blockManagers.values().toArray();
+        return (BlockManager)blockManagers[generator.nextInt(blockManagers.length)];
     }
 }

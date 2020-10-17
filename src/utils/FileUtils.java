@@ -19,6 +19,11 @@ public class FileUtils {
         }
     }
 
+    public static void delete(String filename){
+        File file = new File(filename);
+        file.delete();
+    }
+
     public static void write(String filename, byte[] bytes){
         try (FileOutputStream fos = new FileOutputStream(filename)) {
             fos.write(bytes);

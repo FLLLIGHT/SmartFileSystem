@@ -60,6 +60,12 @@ public class BlockManagerImpl implements BlockManager {
         return id;
     }
 
+    private String getAvailableId(){
+        String prefix = "out";
+        String filename = prefix +"/BlockManager/"+id.toString()+"/id.data";
+        return new String(FileUtils.readAll(filename));
+    }
+
     private void generateIdCount(){
         String prefix = "out";
         String filename = prefix +"/BlockManager/"+id.toString()+"/id.data";
@@ -69,8 +75,8 @@ public class BlockManagerImpl implements BlockManager {
     }
 
     private void indexBlocks(){
-        int n = Integer.parseInt(getAndUpdateNextAvailableId()) - 1;
-        for(int i=0; i<n; i++){
+        int n = Integer.parseInt(getAvailableId()) - 1;
+        for(int i=0; i<=n; i++){
             Id id = new IdImpl(i+"");
             Block block = new BlockImpl(this, id);
             blockManagerMap.put(id, block);

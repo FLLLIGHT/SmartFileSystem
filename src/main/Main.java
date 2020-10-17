@@ -39,6 +39,7 @@ public class Main {
 //        System.out.println(smap.get("1"));
 
 
+        //牛逼！！！
         BlockManager blockManager1 = new BlockManagerImpl("BM1");
         BlockManager blockManager2 = new BlockManagerImpl("BM2");
         BlockManager blockManager3 = new BlockManagerImpl("BM3");
@@ -47,10 +48,20 @@ public class Main {
         blockManagers.add(blockManager3);
         FileManager fileManager = new FileManagerImpl(new IdImpl("FM1"));
         Id id = new IdImpl("helloworld");
-        File file = new FileImpl(fileManager, id);
+        FileImpl file = new FileImpl(fileManager, id);
         Id id2 = new IdImpl("helloworld");
         System.out.println(id.equals(id2));
-        System.out.println(new String(file.read(9)));
+        file.move(2, 1);
+        file.move(2, 0);
+
+//        System.out.println(new String(file.read(3)));
+        System.out.println(new String(file.readAll()));
+        System.out.println(file.pos());
+//        file.move(31,1);
+//        String add = "长颈鹿";
+//        file.write(add.getBytes());
+//        System.out.println(new String(file.readAll()));
+
 //
 //        String strstr = "Hello World!!";
 //        file.write(strstr.getBytes());

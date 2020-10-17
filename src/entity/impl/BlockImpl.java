@@ -19,8 +19,8 @@ public class BlockImpl implements Block {
     public BlockImpl(BlockManager blockManager, Id id, int blockSize, byte[] data){
         this.blockManager = blockManager;
         this.id = id;
-        writeBlock(blockManager.getId().parseId(), ".meta", generateMeta(data, blockSize).getBytes());
-        writeBlock(blockManager.getId().parseId(), ".data", data);
+        writeBlock(blockManager.getId().toString(), ".meta", generateMeta(data, blockSize).getBytes());
+        writeBlock(blockManager.getId().toString(), ".data", data);
     }
 
     @Override
@@ -36,8 +36,9 @@ public class BlockImpl implements Block {
     @Override
     public byte[] read() {
         //todo: 读data数据
+        //todo: 判断checksum
         String prefix = "out";
-        String filename = prefix +"/BlockManager/"+blockManager.getId().parseId()+"/"+id.parseId()+".data";
+        String filename = prefix +"/BlockManager/"+blockManager.getId().toString()+"/"+id.toString()+".data";
         return FileUtils.readAll(filename);
     }
 
@@ -49,7 +50,7 @@ public class BlockImpl implements Block {
 
     private void writeBlock(String blockManagerId, String suffix, byte[] content){
         String prefix = "out";
-        String filename = prefix +"/BlockManager/"+blockManagerId+"/"+id.parseId()+suffix;
+        String filename = prefix +"/BlockManager/"+blockManagerId+"/"+id.toString()+suffix;
         FileUtils.create(filename);
         FileUtils.write(filename, content);
     }

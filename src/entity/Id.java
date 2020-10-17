@@ -1,5 +1,12 @@
 package entity;
 
 public interface Id {
-    public String parseId();
+    @Override
+    public String toString();
+
+    @Override
+    public int hashCode();
+
+    @Override
+    public boolean equals(Object obj);
 }

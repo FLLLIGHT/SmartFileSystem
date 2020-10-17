@@ -17,9 +17,10 @@ public class BlockManagerImpl implements BlockManager {
 
     public BlockManagerImpl(String idStr){
         this.id = new IdImpl(idStr);
-        //todo: 也不一定要生成，如果是索引时就不需要生成
-        generateIdCount();
+        //todo: 也不一定要生成，如果是索引时就不需要生成，生成新文件夹时需要生成
+//        generateIdCount();
         blockManagerMap = new HashMap<>();
+        indexBlocks();
     }
 
     @Override
@@ -53,7 +54,7 @@ public class BlockManagerImpl implements BlockManager {
     //持久化该manager的下一个可用id
     private String getAndUpdateNextAvailableId(){
         String prefix = "out";
-        String filename = prefix +"/BlockManager/"+id.parseId()+"/id.data";
+        String filename = prefix +"/BlockManager/"+id.toString()+"/id.data";
         String id = new String(FileUtils.readAll(filename));
         FileUtils.update(filename, ((Integer.parseInt(id)+1)+"").getBytes());
         return id;
@@ -61,10 +62,19 @@ public class BlockManagerImpl implements BlockManager {
 
     private void generateIdCount(){
         String prefix = "out";
-        String filename = prefix +"/BlockManager/"+id.parseId()+"/id.data";
+        String filename = prefix +"/BlockManager/"+id.toString()+"/id.data";
         FileUtils.create(filename);
         String content = "0";
         FileUtils.write(filename, content.getBytes());
+    }
+
+    private void indexBlocks(){
+        int n = Integer.parseInt(getAndUpdateNextAvailableId()) - 1;
+        for(int i=0; i<n; i++){
+            Id id = new IdImpl(i+"");
+            Block block = new BlockImpl(this, id);
+            blockManagerMap.put(id, block);
+        }
     }
 
 //    public static void main(String args[]) throws IOException {

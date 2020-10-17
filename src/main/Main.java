@@ -22,8 +22,8 @@ public class Main {
     public static ArrayList<BlockManager> blockManagers = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
-        String filename = "out/BlockManager/BM1/0.meta";
-        System.out.println(FileUtils.getMetaInfo(filename).get("checksum"));
+//        String filename = "out/BlockManager/BM1/0.meta";
+//        System.out.println(FileUtils.getMetaInfo(filename).get("checksum"));
 //        String filename = "111.meta";
 //        String val = new String(FileUtils.readAll(filename));
 //        String[] s = val.split("\n");
@@ -39,16 +39,20 @@ public class Main {
 //        System.out.println(smap.get("1"));
 
 
-//        BlockManager blockManager1 = new BlockManagerImpl("BM1");
-//        BlockManager blockManager2 = new BlockManagerImpl("BM2");
-//        BlockManager blockManager3 = new BlockManagerImpl("BM3");
-//        blockManagers.add(blockManager1);
-//        blockManagers.add(blockManager2);
-//        blockManagers.add(blockManager3);
-//        FileManager fileManager = new FileManagerImpl();
-//        Id id = new IdImpl("hello");
-//        File file = new FileImpl(fileManager, id);
-//        String strstr = "Hello World!";
+        BlockManager blockManager1 = new BlockManagerImpl("BM1");
+        BlockManager blockManager2 = new BlockManagerImpl("BM2");
+        BlockManager blockManager3 = new BlockManagerImpl("BM3");
+        blockManagers.add(blockManager1);
+        blockManagers.add(blockManager2);
+        blockManagers.add(blockManager3);
+        FileManager fileManager = new FileManagerImpl(new IdImpl("FM1"));
+        Id id = new IdImpl("helloworld");
+        File file = new FileImpl(fileManager, id);
+        Id id2 = new IdImpl("helloworld");
+        System.out.println(id.equals(id2));
+        System.out.println(new String(file.read(9)));
+//
+//        String strstr = "Hello World!!";
 //        file.write(strstr.getBytes());
 
         //e7e7f78235aebae81f814ee0420607c9bbf4857e5476775de37f5a0da1f95cf3

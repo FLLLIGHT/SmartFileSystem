@@ -101,4 +101,9 @@ public class FileUtils {
         }
         return false;
     }
+
+    public static String[] list(String path){
+        File folder = new File(path);
+        return folder.list();
+    }
 }

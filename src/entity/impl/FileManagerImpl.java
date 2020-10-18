@@ -3,6 +3,7 @@ package entity.impl;
 import entity.File;
 import entity.FileManager;
 import entity.Id;
+import utils.FileUtils;
 
 import java.util.HashMap;
 
@@ -13,6 +14,11 @@ public class FileManagerImpl implements FileManager {
     public FileManagerImpl(Id id){
         this.id = id;
         fileManagerMap = new HashMap<>();
+
+        String path = "out/FileManager/"+id.toString();
+        if(!FileUtils.createDirectory(path)){
+            indexFiles();
+        }
     }
 
     @Override
@@ -36,5 +42,16 @@ public class FileManagerImpl implements FileManager {
 
     public Id getId(){
         return id;
+    }
+
+    private void indexFiles(){
+        String prefix = "out";
+        String path = prefix +"/FileManager/"+id.toString();
+        String[] filenames = FileUtils.list(path);
+        for(String filename : filenames){
+            Id id = new IdImpl(filename.substring(0, filename.lastIndexOf('.')));
+            File file = new FileImpl(this, id);
+            fileManagerMap.put(id, file);
+        }
     }
 }

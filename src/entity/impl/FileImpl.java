@@ -21,7 +21,7 @@ public class FileImpl implements File {
     //todo: key是插入的位置（cursor）
     //todo: 考虑在哪里初始化比较好
     //为什么每个block（除最后）都要拉满：方便索引，直接可以计算出位置，不然不能直接通过位置计算出哪个logic block中
-    private HashMap<Integer, Byte[]> buffer = new HashMap<>();
+    private byte[] buffer;
 
     //索引已有的file
     public FileImpl(FileManager fileManager, Id id){
@@ -63,7 +63,14 @@ public class FileImpl implements File {
     }
 
     //从startIndex的位置开始读length个字节的数据
-    private byte[] read(int length, long startIndex){
+    private byte[] read(int length, long startIndex, boolean buffer){
+        //如果是从buffer读，则直接读buffer即可。
+        if(buffer){
+            byte[] data = new byte[length];
+            System.arraycopy(this.buffer, (int)startIndex, data, 0, length);
+            return data;
+        }
+
         int blockSize = getBlockSize();
         int startBlockIndex = (int)(startIndex / blockSize);
         int endBlockIndex = (int)((startIndex + length - 1) / blockSize);
@@ -97,19 +104,40 @@ public class FileImpl implements File {
     //直接从当前指针位置开始读
     @Override
     public byte[] read(int length) {
-        return read(length, currCursor);
+        if(getBufferSetting().equals("yes")&&buffer==null){
+            //读入buffer
+            readAll();
+            return read(length, currCursor, true);
+        }else if(getBufferSetting().equals("yes")){
+            //直接从buffer读
+            return read(length, currCursor, true);
+        }
+        return read(length, currCursor, false);
     }
 
     public byte[] readAll(){
-        return read(getFileSize(), 0);
+        if(getBufferSetting().equals("yes")&&buffer==null){
+            //读入buffer
+            buffer = read(getFileSize(), 0, false);
+            return buffer;
+        }else if(getBufferSetting().equals("yes")){
+            //直接从buffer读
+            return buffer;
+        }
+        return read(getFileSize(), 0, false);
     }
 
     //todo: 从文件的中间开始修改block，后面的全部需要改变
     @Override
     public void write(byte[] b) {
         if(getBufferSetting().equals("yes")){
-            //写入hashmap中
-            //如果写入指针的位置与原来相同，则直接加到原来的后面
+            if(buffer==null) readAll();
+            int newFileSize = buffer.length + b.length;
+            byte[] newBuffer = new byte[newFileSize];
+            System.arraycopy(buffer, 0, newBuffer, 0, (int)currCursor);
+            System.arraycopy(b, 0, newBuffer, (int)currCursor, b.length);
+            System.arraycopy(buffer, (int)currCursor, newBuffer, (int)currCursor+b.length, buffer.length-(int)currCursor);
+            buffer = newBuffer;
         }else if(getBufferSetting().equals("no")){
             int blockSize = getBlockSize();
             int fileSize = getFileSize();
@@ -120,7 +148,9 @@ public class FileImpl implements File {
             //changedByte: 要更新的所有data
             byte[] changedData = new byte[totalSize];
             if(fileSize!=0) {
-                byte[] oldData = read(fileSize - blockUnchangedNumber * blockSize, blockUnchangedNumber * blockSize);
+                /////////////////////////////////
+                move(blockUnchangedNumber * blockSize, MOVE_HEAD);
+                byte[] oldData = read(fileSize - blockUnchangedNumber * blockSize);
                 System.arraycopy(oldData, 0, changedData, 0, (int)currCursor%blockSize);
                 System.arraycopy(b, 0, changedData, (int)currCursor%blockSize, b.length);
                 System.arraycopy(oldData, (int)currCursor%blockSize, changedData, (int)currCursor%blockSize+b.length, oldData.length-(int)currCursor%blockSize);
@@ -195,7 +225,7 @@ public class FileImpl implements File {
 
     @Override
     public void close() {
-
+        write(buffer, 0);
     }
 
     @Override
@@ -220,7 +250,9 @@ public class FileImpl implements File {
             int totalSize = (int)(newSize % blockSize);
             //changedByte: 要更新的所有data
             byte[] changedData = new byte[totalSize];
-            byte[] oldData = read(Math.min(blockSize, fileSize-blockUnchangedNumber * blockSize), blockUnchangedNumber * blockSize);
+            ////////////////////////////////////
+            move(blockUnchangedNumber * blockSize, MOVE_HEAD);
+            byte[] oldData = read(Math.min(blockSize, fileSize-blockUnchangedNumber * blockSize));
             System.arraycopy(oldData, 0, changedData, 0, totalSize);
             write(changedData, blockUnchangedNumber);
         }

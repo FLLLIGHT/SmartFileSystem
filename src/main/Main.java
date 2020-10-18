@@ -36,8 +36,9 @@ public class Main {
 
         Id id = new IdImpl("helloWorld");
         File file = fileManager.getFile(id);
-        String add = "zzzzzzzzzzzzz";
-        file.move(9, File.MOVE_CURR);
+        SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
+        String add = "kkkkkkkkkkkkkkk";
+        file.move(14, File.MOVE_CURR);
         file.write(add.getBytes());
         SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
     }

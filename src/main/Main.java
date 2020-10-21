@@ -34,49 +34,14 @@ public class Main {
         FileManager fileManager = new FileManagerImpl(new IdImpl("FM1"));
         fileManagers.put(new IdImpl("FM1"), fileManager);
 
-        Id id = new IdImpl("helloWorld");
-//        Thread.sleep(10000);
-//        File file = fileManager.newFile(id);
+        Id id = new IdImpl("helloWorld1");
         File file = fileManager.getFile(id);
-//        String s = "hello world!!";
-//        file.write(s.getBytes());
-//        file.close();
-
-        SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
-        file.move(0, File.MOVE_HEAD);
-
-        file.setSize(100);
-        file.move(80, File.MOVE_HEAD);
-        System.out.println(file.pos());
-
-        System.out.println(new String(file.read(2)));
-        String ss = "kk";
-        file.write(ss.getBytes());
         System.out.println(file.pos());
         SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
-        file.close();
-////
-//        String s = "mmmmm";
-//        file.write(s.getBytes());
-//
-//        System.out.println(file.pos());
-//        System.out.println(new String(file.read(1)));
-//        System.out.println(file.pos());
-//        System.out.println(new String(file.read(2)));
-//        System.out.println(file.pos());
-//        SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
-//
-//        file.move(0, File.MOVE_HEAD);
-//        file.setSize(40);
-//        System.out.println(file.pos());
-//        SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
+        System.out.println(file.pos());
+        file.move(-1, File.MOVE_TAIL);
+        file.move(1, File.MOVE_CURR);
+        System.out.println(file.pos());
 //        file.close();
-
-
-
-//        String add = "kkkkkkkkkkkkkkk";
-//        file.move(14, File.MOVE_CURR);
-//        file.write(add.getBytes());
-//        SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
     }
 }

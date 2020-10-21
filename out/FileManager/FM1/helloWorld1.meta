@@ -1,0 +1,5 @@
+size:13
+block size:8
+logic block:
+0:[BM2,10][BM3,9][BM2,11]
+1:[BM3,10][BM1,8][BM1,9]

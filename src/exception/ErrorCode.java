@@ -15,6 +15,9 @@ public class ErrorCode extends RuntimeException{
     public static final int BLOCK_META_NOT_EXISTED = 9;
     public static final int SETTING_FILE_ERROR = 10;
     public static final int BLOCK_ALREADY_EXISTED = 11;
+    public static final int FILE_DATA_DAMAGED = 12;
+    public static final int MOVE_OUT_OF_BOUNDARY = 13;
+    public static final int READ_OUT_OF_BOUNDARY = 14;
 
     public static final int UNKNOWN = 1000;
 
@@ -37,10 +40,14 @@ public class ErrorCode extends RuntimeException{
         ErrorCodeMap.put(FILE_NOT_EXISTED, "this file is not existed");
         ErrorCodeMap.put(BLOCK_NOT_EXISTED, "this block is not existed");
 
+        //试图寻找本该存在的数据，但是不存在
         ErrorCodeMap.put(BLOCK_META_NOT_EXISTED, "this block meta is not existed");
 
         ErrorCodeMap.put(SETTING_FILE_ERROR, "there is something wrong with setting file");
+        ErrorCodeMap.put(FILE_DATA_DAMAGED, "there is something wrong with the file");
 
+        ErrorCodeMap.put(MOVE_OUT_OF_BOUNDARY, "you have moved out of the boundary");
+        ErrorCodeMap.put(READ_OUT_OF_BOUNDARY, "you have read out of the boundary");
 
         ErrorCodeMap.put(UNKNOWN, "unknown");
     }

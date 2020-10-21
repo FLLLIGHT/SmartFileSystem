@@ -66,6 +66,7 @@ public class FileImpl implements File {
 
     //从startIndex的位置开始读length个字节的数据
     private byte[] read(int length, long startIndex, boolean buffer){
+        if(currCursor+length>size()) throw new ErrorCode(ErrorCode.READ_OUT_OF_BOUNDARY);
         //如果是从buffer读，则直接读buffer即可。
         if(buffer){
             byte[] data = new byte[length];
@@ -92,17 +93,21 @@ public class FileImpl implements File {
             }
             //其他block全部都读
             List<String[]> logicBlocks = getLogicBlocks(metaInfo.get(i+""));
-            //todo: 若读取失败，读取下一个
+            //若读取失败，抛出并捕捉异常，而后读取下一个；若全都失败，则抛出异常并结束
+            boolean flag = false;
             for(String[] logicBlock : logicBlocks){
                 try {
                     BlockManager blockManager = getBlockManagerById(logicBlock[0]);
                     Block block = blockManager.getBlock(new IdImpl(logicBlock[1]));
                     System.arraycopy(block.read(), start, data, index, blockSize-start);
+                    flag = true;
                     break;
                 } catch (ErrorCode errorCode){
+                    //可能有两种异常，getBlock的异常和block.read的异常
                     errorCode.printStackTrace();
                 }
             }
+            if(!flag) throw new ErrorCode(ErrorCode.FILE_DATA_DAMAGED);
             index += (blockSize - start);
         }
         return data;
@@ -237,6 +242,7 @@ public class FileImpl implements File {
         } else if(where==MOVE_TAIL) {
             currCursor = size() + offset;
         }
+        if(currCursor>size()) throw new ErrorCode(ErrorCode.MOVE_OUT_OF_BOUNDARY);
         return currCursor;
     }
 

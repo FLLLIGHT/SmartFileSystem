@@ -78,6 +78,7 @@ public class FileImpl implements File {
         int endBlockIndex = (int)((startIndex + length - 1) / blockSize);
         HashMap<String, String> metaInfo = getMetaInfo();
         byte[] data = new byte[length];
+        if(length==0) return data;
         int index = 0;
         for(int i=startBlockIndex; i<=endBlockIndex; i++){
             //计算第一个block的开始位置
@@ -96,7 +97,6 @@ public class FileImpl implements File {
                 try {
                     BlockManager blockManager = getBlockManagerById(logicBlock[0]);
                     Block block = blockManager.getBlock(new IdImpl(logicBlock[1]));
-                    SmartUtils.smartHex(block);
                     System.arraycopy(block.read(), start, data, index, blockSize-start);
                     break;
                 } catch (ErrorCode errorCode){
@@ -114,24 +114,30 @@ public class FileImpl implements File {
         if(getBufferSetting().equals("yes")&&buffer==null){
             //读入buffer
             readAll();
-            return read(length, currCursor, true);
+            byte[] data = read(length, currCursor, true);
+            move(length, MOVE_CURR);
+            return data;
         }else if(getBufferSetting().equals("yes")){
             //直接从buffer读
-            return read(length, currCursor, true);
+            byte[] data = read(length, currCursor, true);
+            move(length, MOVE_CURR);
+            return data;
         }
-        return read(length, currCursor, false);
+        byte[] data = read(length, currCursor, false);
+        move(length, MOVE_CURR);
+        return data;
     }
 
     public byte[] readAll(){
         if(getBufferSetting().equals("yes")&&buffer==null){
             //读入buffer
-            buffer = read(getFileSize(), 0, false);
+            buffer = read((int)size(), 0, false);
             return buffer;
         }else if(getBufferSetting().equals("yes")){
             //直接从buffer读
             return buffer;
         }
-        return read(getFileSize(), 0, false);
+        return read((int)size(), 0, false);
     }
 
     //todo: 从文件的中间开始修改block，后面的全部需要改变
@@ -147,7 +153,7 @@ public class FileImpl implements File {
             buffer = newBuffer;
         }else if(getBufferSetting().equals("no")){
             int blockSize = getBlockSize();
-            int fileSize = getFileSize();
+            int fileSize = (int)size();
             //从第blockUnchangedNumber个block(logic block)开始，就需要改了
             int blockUnchangedNumber = (int)(currCursor / blockSize);
             //文件的总大小-不需要改的大小+新增的大小
@@ -166,6 +172,8 @@ public class FileImpl implements File {
             }
             write(changedData, blockUnchangedNumber);
         }
+
+        move(b.length, MOVE_CURR);
     }
 
     private void write(byte[] b, int startIndex){
@@ -209,7 +217,9 @@ public class FileImpl implements File {
     }
 
     private String getBufferSetting(){
-        return FileUtils.getProperty("buffer");
+        String buffer = FileUtils.getProperty("buffer");
+        if(!buffer.equals("yes")&&!buffer.equals("no")) throw new ErrorCode(ErrorCode.SETTING_FILE_ERROR);
+        return buffer;
     }
 
     @Override
@@ -225,7 +235,7 @@ public class FileImpl implements File {
         } else if(where==MOVE_HEAD) {
             currCursor = offset;
         } else if(where==MOVE_TAIL) {
-            currCursor = getFileSize() + offset;
+            currCursor = size() + offset;
         }
         return currCursor;
     }
@@ -233,13 +243,15 @@ public class FileImpl implements File {
     @Override
     public void close() {
         write(buffer, 0);
+        buffer = null;
     }
 
     @Override
     public long size() {
+        if(buffer!=null) return buffer.length;
         String prefix = "out";
         String filename = prefix +"/FileManager/"+fileManager.getId().toString()+"/"+id.toString()+".meta";
-        return Long.parseLong(FileUtils.getMetaInfo(filename).get("size"));
+        return Long.parseLong(FileUtils.getMetaInfo(filename, "file meta").get("size"));
     }
 
     @Override
@@ -249,20 +261,27 @@ public class FileImpl implements File {
             move(0, MOVE_TAIL);
             write(new byte[(int)(newSize-oldSize)]);
         }else if(newSize<oldSize){
-            int blockSize = getBlockSize();
-            int fileSize = getFileSize();
-            //从第blockUnchangedNumber个block(logic block)开始，就需要改了
-            int blockUnchangedNumber = (int)(newSize / blockSize);
-            //文件的总大小-不需要改的大小+新增的大小
-            int totalSize = (int)(newSize % blockSize);
-            //changedByte: 要更新的所有data
-            byte[] changedData = new byte[totalSize];
-            ////////////////////////////////////
-            move(blockUnchangedNumber * blockSize, MOVE_HEAD);
-            byte[] oldData = read(Math.min(blockSize, fileSize-blockUnchangedNumber * blockSize));
-            System.arraycopy(oldData, 0, changedData, 0, totalSize);
-            write(changedData, blockUnchangedNumber);
+            if(getBufferSetting().equals("yes")){
+                byte[] newBuffer = new byte[(int)newSize];
+                System.arraycopy(buffer, 0, newBuffer, 0, (int)newSize);
+                buffer = newBuffer;
+            }else {
+                int blockSize = getBlockSize();
+                int fileSize = (int)size();
+                //从第blockUnchangedNumber个block(logic block)开始，就需要改了
+                int blockUnchangedNumber = (int) (newSize / blockSize);
+                //文件的总大小-不需要改的大小+新增的大小
+                int totalSize = (int) (newSize % blockSize);
+                //changedByte: 要更新的所有data
+                byte[] changedData = new byte[totalSize];
+
+                move(blockUnchangedNumber * blockSize, MOVE_HEAD);
+                byte[] oldData = read(Math.min(blockSize, fileSize - blockUnchangedNumber * blockSize));
+                System.arraycopy(oldData, 0, changedData, 0, totalSize);
+                write(changedData, blockUnchangedNumber);
+            }
         }
+        move(0, MOVE_TAIL);
     }
 
     //获取配置文件要求的副本数量
@@ -274,21 +293,21 @@ public class FileImpl implements File {
     private int getBlockSize() {
         String prefix = "out";
         String filename = prefix +"/FileManager/"+fileManager.getId().toString()+"/"+id.toString()+".meta";
-        return Integer.parseInt(FileUtils.getMetaInfo(filename).get("block size"));
+        return Integer.parseInt(FileUtils.getMetaInfo(filename, "file meta").get("block size"));
     }
 
     //从file meta中读文件大小
     private int getFileSize(){
         String prefix = "out";
         String filename = prefix +"/FileManager/"+fileManager.getId().toString()+"/"+id.toString()+".meta";
-        return Integer.parseInt(FileUtils.getMetaInfo(filename).get("size"));
+        return Integer.parseInt(FileUtils.getMetaInfo(filename, "file meta").get("size"));
     }
 
     //获取解析后的meta文件
     private HashMap<String, String> getMetaInfo(){
         String prefix = "out";
         String filename = prefix +"/FileManager/"+fileManager.getId().toString()+"/"+id.toString()+".meta";
-        return FileUtils.getMetaInfo(filename);
+        return FileUtils.getMetaInfo(filename, "file meta");
     }
 
     private String generateMeta(HashMap<String, String> valMap){

@@ -3,6 +3,7 @@ package entity.impl;
 import entity.Block;
 import entity.BlockManager;
 import entity.Id;
+import exception.ErrorCode;
 import utils.FileUtils;
 import utils.SmartUtils;
 
@@ -33,7 +34,9 @@ public class BlockManagerImpl implements BlockManager {
     //从该manager管理的map中找到block并返回
     @Override
     public Block getBlock(Id indexId) {
-        return blockManagerMap.get(indexId);
+        Block block = blockManagerMap.get(indexId);
+        if (block==null) throw new ErrorCode(ErrorCode.BLOCK_NOT_EXISTED);
+        return block;
     }
 
     //新建block并加到该manager管理的map中
@@ -41,6 +44,7 @@ public class BlockManagerImpl implements BlockManager {
     public Block newBlock(byte[] b) {
         String idStr = getAndUpdateNextAvailableId();
         Id id = new IdImpl(idStr);
+        if(blockManagerMap.containsKey(id)) throw new ErrorCode(ErrorCode.BLOCK_ALREADY_EXISTED);
         Block block = new BlockImpl(this, id, b);
         blockManagerMap.put(id ,block);
         return block;
@@ -59,7 +63,7 @@ public class BlockManagerImpl implements BlockManager {
     private String getAndUpdateNextAvailableId(){
         String prefix = "out";
         String filename = prefix +"/BlockManager/"+id.toString()+"/id.data";
-        String id = new String(FileUtils.readAll(filename));
+        String id = new String(FileUtils.readAll(filename, "id data"));
         FileUtils.update(filename, ((Integer.parseInt(id)+1)+"").getBytes());
         return id;
     }
@@ -68,7 +72,7 @@ public class BlockManagerImpl implements BlockManager {
     private String getAvailableId(){
         String prefix = "out";
         String filename = prefix +"/BlockManager/"+id.toString()+"/id.data";
-        return new String(FileUtils.readAll(filename));
+        return new String(FileUtils.readAll(filename, "id data"));
     }
 
     //初始化可用id，并持久化

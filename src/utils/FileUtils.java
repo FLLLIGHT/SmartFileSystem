@@ -1,5 +1,7 @@
 package utils;
 
+import exception.ErrorCode;
+
 import java.io.*;
 import java.util.HashMap;
 import java.util.Properties;
@@ -15,7 +17,7 @@ public class FileUtils {
                 System.out.println("File already exists.");
             }
         }catch (IOException e) {
-            e.printStackTrace();
+            new ErrorCode(ErrorCode.IO_EXCEPTION).printStackTrace();
         }
     }
 
@@ -28,7 +30,7 @@ public class FileUtils {
         try (FileOutputStream fos = new FileOutputStream(filename)) {
             fos.write(bytes);
         }catch (IOException e){
-            e.printStackTrace();
+            new ErrorCode(ErrorCode.IO_EXCEPTION).printStackTrace();
         }
     }
 
@@ -40,7 +42,7 @@ public class FileUtils {
         }
     }
 
-    public static byte[] read(String filename, int off, int len){
+    private static byte[] read(String filename, int off, int len){
         byte[] data = new byte[len];
         try (FileInputStream fis = new FileInputStream(filename)) {
             int n = fis.read(data, off, len);
@@ -50,12 +52,15 @@ public class FileUtils {
         return data;
     }
 
-    public static byte[] readAll(String filename){
+    public static byte[] readAll(String filename, String source){
         int len = -1;
         try (FileInputStream fis = new FileInputStream(filename)) {
             len = fis.available();
         }catch (IOException e){
-            e.printStackTrace();
+            if(source.equals("block data")) throw new ErrorCode(ErrorCode.BLOCK_DATA_NOT_EXISTED);
+            if(source.equals("id data")) throw new ErrorCode(ErrorCode.ID_DATA_NOT_EXISTED);
+            if(source.equals("file meta")) throw new ErrorCode(ErrorCode.FILE_META_NOT_EXISTED);
+            if(source.equals("block meta")) throw new ErrorCode(ErrorCode.BLOCK_META_NOT_EXISTED);
         }
         return read(filename, 0, len);
     }
@@ -67,13 +72,14 @@ public class FileUtils {
             properties.load(is);
             propertyVal = properties.getProperty(propertyKey);
         } catch (IOException e){
-            e.printStackTrace();
+            throw new ErrorCode(ErrorCode.SETTING_FILE_ERROR);
         }
+        if(propertyVal==null) throw new ErrorCode(ErrorCode.SETTING_FILE_ERROR);
         return propertyVal;
     }
 
-    public static HashMap<String, String> getMetaInfo(String filename){
-        String val = new String(FileUtils.readAll(filename));
+    public static HashMap<String, String> getMetaInfo(String filename, String source){
+        String val = new String(FileUtils.readAll(filename, source));
         String[] valByLine = val.split("\n");
         HashMap<String, String> valMap = new HashMap<>();
         for(String valPerLine : valByLine){

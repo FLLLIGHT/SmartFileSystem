@@ -42,28 +42,32 @@ public class BlockImpl implements Block {
     public byte[] read() throws ErrorCode {
         String prefix = "out";
         String filename = prefix +"/BlockManager/"+blockManager.getId().toString()+"/"+id.toString()+".data";
-        byte[] data = FileUtils.readAll(filename);
+        byte[] data = FileUtils.readAll(filename, "block data");
         if(!checkChecksum(data)) throw new ErrorCode(ErrorCode.CHECKSUM_CHECK_FAILED);
         return data;
     }
 
+    //从block的meta中获取当前block的实际size大小（通常，一个文件中，除了最后一个block，其他block的实际大小与文件meta信息中的block size大小相同）
     @Override
     public int blockSize() {
         String prefix = "out";
         String filename = prefix +"/BlockManager/"+blockManager.getId().toString()+"/"+id.toString()+".meta";
-        return Integer.parseInt(FileUtils.getMetaInfo(filename).get("size"));
+        return Integer.parseInt(FileUtils.getMetaInfo(filename, "block meta").get("size"));
     }
 
+    //从文件的meta中获取当前block的checksum
     private String getChecksum(){
         String prefix = "out";
         String filename = prefix +"/BlockManager/"+blockManager.getId().toString()+"/"+id.toString()+".meta";
-        return FileUtils.getMetaInfo(filename).get("checksum");
+        return FileUtils.getMetaInfo(filename, "block meta").get("checksum");
     }
 
+    //判断checksum是否相同
     private boolean checkChecksum(byte[] data){
         return getChecksum().equals(SHA256Utils.getSHA256(data));
     }
 
+    //写入block的meta或data信息
     private void writeBlock(String blockManagerId, String suffix, byte[] content){
         String prefix = "out";
         String filename = prefix +"/BlockManager/"+blockManagerId+"/"+id.toString()+suffix;

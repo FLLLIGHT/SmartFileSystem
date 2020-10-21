@@ -90,10 +90,6 @@ public class FileUtils {
         return valMap;
     }
 
-    public static void writeMetaInfo(){
-
-    }
-
     public static boolean createDirectory(String filename){
         File folder = new File(filename);
         if(!folder.exists()||!folder.isDirectory()){

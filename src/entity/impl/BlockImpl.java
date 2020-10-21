@@ -3,6 +3,7 @@ package entity.impl;
 import entity.Block;
 import entity.BlockManager;
 import entity.Id;
+import exception.ErrorCode;
 import utils.FileUtils;
 import utils.SHA256Utils;
 
@@ -35,13 +36,15 @@ public class BlockImpl implements Block {
         return blockManager;
     }
 
+    //读data文件中的数据并判断checksum
+    //如果checksum错误，则抛出异常
     @Override
-    public byte[] read() {
-        //todo: 读data数据
-        //todo: 判断checksum
+    public byte[] read() throws ErrorCode {
         String prefix = "out";
         String filename = prefix +"/BlockManager/"+blockManager.getId().toString()+"/"+id.toString()+".data";
-        return FileUtils.readAll(filename);
+        byte[] data = FileUtils.readAll(filename);
+        if(!checkChecksum(data)) throw new ErrorCode(ErrorCode.CHECKSUM_CHECK_FAILED);
+        return data;
     }
 
     @Override
@@ -55,6 +58,10 @@ public class BlockImpl implements Block {
         String prefix = "out";
         String filename = prefix +"/BlockManager/"+blockManager.getId().toString()+"/"+id.toString()+".meta";
         return FileUtils.getMetaInfo(filename).get("checksum");
+    }
+
+    private boolean checkChecksum(byte[] data){
+        return getChecksum().equals(SHA256Utils.getSHA256(data));
     }
 
     private void writeBlock(String blockManagerId, String suffix, byte[] content){

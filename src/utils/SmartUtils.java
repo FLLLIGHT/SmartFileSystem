@@ -15,7 +15,7 @@ public class SmartUtils {
     }
 
     public static void smartHex(Block block){
-
+        System.out.println(bytesToHex(block.read()));
     }
 
     public static void smartWrite(String fileName, long startIndex, FileManager fileManager, String data){
@@ -26,5 +26,16 @@ public class SmartUtils {
 
     public static void smartCopy(String from, String to, FileManager fileManager){
         fileManager.copyFile(new IdImpl(from), new IdImpl(to));
+    }
+
+    public static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    public static String bytesToHex(byte[] bytes){
+        char[] hexChars = new char[bytes.length*2];
+        for(int i=0; i<bytes.length; i++){
+            int v = bytes[i] & 0xFF;
+            hexChars[i*2] = HEX_ARRAY[v>>>4];
+            hexChars[i*2+1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 }

@@ -1,8 +1,10 @@
 package entity.impl;
 
 import entity.*;
+import exception.ErrorCode;
 import main.Main;
 import utils.FileUtils;
+import utils.SmartUtils;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -91,10 +93,15 @@ public class FileImpl implements File {
             List<String[]> logicBlocks = getLogicBlocks(metaInfo.get(i+""));
             //todo: 若读取失败，读取下一个
             for(String[] logicBlock : logicBlocks){
-                BlockManager blockManager = getBlockManagerById(logicBlock[0]);
-                Block block = blockManager.getBlock(new IdImpl(logicBlock[1]));
-                System.arraycopy(block.read(), start, data, index, blockSize-start);
-                break;
+                try {
+                    BlockManager blockManager = getBlockManagerById(logicBlock[0]);
+                    Block block = blockManager.getBlock(new IdImpl(logicBlock[1]));
+                    SmartUtils.smartHex(block);
+                    System.arraycopy(block.read(), start, data, index, blockSize-start);
+                    break;
+                } catch (ErrorCode errorCode){
+                    errorCode.printStackTrace();
+                }
             }
             index += (blockSize - start);
         }

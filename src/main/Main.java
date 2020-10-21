@@ -24,7 +24,6 @@ public class Main {
     public static HashMap<Id, FileManager> fileManagers = new HashMap<>();
 
     public static void main(String[] args) throws IOException {
-        //牛逼！！！
         BlockManager blockManager1 = new BlockManagerImpl(new IdImpl("BM1"));
         BlockManager blockManager2 = new BlockManagerImpl(new IdImpl("BM2"));
         BlockManager blockManager3 = new BlockManagerImpl(new IdImpl("BM3"));
@@ -37,9 +36,12 @@ public class Main {
         Id id = new IdImpl("helloWorld");
         File file = fileManager.getFile(id);
         SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
-        String add = "kkkkkkkkkkkkkkk";
-        file.move(14, File.MOVE_CURR);
-        file.write(add.getBytes());
+        System.out.println(file.size());
         SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
+        SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
+//        String add = "kkkkkkkkkkkkkkk";
+//        file.move(14, File.MOVE_CURR);
+//        file.write(add.getBytes());
+//        SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
     }
 }

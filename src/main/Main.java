@@ -34,14 +34,10 @@ public class Main {
         FileManager fileManager = new FileManagerImpl(new IdImpl("FM1"));
         fileManagers.put(new IdImpl("FM1"), fileManager);
 
-        Id id = new IdImpl("helloWorld1");
+        Id id = new IdImpl("helloWorld5");
         File file = fileManager.getFile(id);
-        System.out.println(file.pos());
+
         SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
-        System.out.println(file.pos());
-        file.move(-1, File.MOVE_TAIL);
-        file.move(1, File.MOVE_CURR);
-        System.out.println(file.pos());
 //        file.close();
     }
 }

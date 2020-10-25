@@ -89,7 +89,6 @@ public class FileUtils {
             }else if(nameAndVal.length==2){
                 valMap.put(nameAndVal[0], nameAndVal[1]);
             }else{
-                //todo: 异常
                 System.out.println("meta info error");
             }
         }

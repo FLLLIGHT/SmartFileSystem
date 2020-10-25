@@ -31,13 +31,44 @@ public class Main {
         blockManagers.put(new IdImpl("BM1"), blockManager1);
         blockManagers.put(new IdImpl("BM2"), blockManager2);
         blockManagers.put(new IdImpl("BM3"), blockManager3);
-        FileManager fileManager = new FileManagerImpl(new IdImpl("FM1"));
-        fileManagers.put(new IdImpl("FM1"), fileManager);
+        FileManager fileManager1 = new FileManagerImpl(new IdImpl("FM1"));
+        FileManager fileManager2 = new FileManagerImpl(new IdImpl("FM2"));
+        fileManagers.put(new IdImpl("FM1"), fileManager1);
+        fileManagers.put(new IdImpl("FM2"), fileManager2);
 
-        Id id = new IdImpl("helloWorld5");
-        File file = fileManager.getFile(id);
+//        byte[] enp = new byte[]{0x00,0x30,0x31,0x00,0x41};
+//        System.out.println(new String(enp));
 
-        SmartUtils.smartCat(id.toString(), 0, -1, fileManager);
+//        Id id = new IdImpl("file1");
+//        File file = fileManager1.getFile(id);
+//        SmartUtils.smartWrite("file1", 0, fileManager1);
+//        file.move(0, File.MOVE_HEAD);
+//        SmartUtils.smartCat("file1", fileManager1);
+//        file.setSize(20);
+//        System.out.println(file.size());
+//        SmartUtils.smartWrite("file1", 15, fileManager1);
+//
+
+//        SmartUtils.smartCat("file1", fileManager1);
+
+//        SmartUtils.smartCopy("file1", "file2", fileManager1, fileManager2);
+//        File file2 = fileManager2.getFile(new IdImpl("file2"));
+//        SmartUtils.smartWrite("file2", 10, fileManager2);
+//        file.move(0, File.MOVE_HEAD);
+//        file2.move(0, File.MOVE_HEAD);
+//        SmartUtils.smartCat("file2", fileManager2);
+//        SmartUtils.smartCat("file1", fileManager1);
+
+//        SmartUtils.smartCat("file1", fileManager1);
+
+//        Id id = new IdImpl("file2");
+//        File file2 = fileManager2.getFile(id);
+//        file2.setSize(7);
+//        file2.move(0, File.MOVE_HEAD);
+//        SmartUtils.smartCat("file2", fileManager2);
+//        file2.move(5, File.MOVE_HEAD);
+//        SmartUtils.smartCat("file2", fileManager2);
 //        file.close();
+//        file2.close();
     }
 }

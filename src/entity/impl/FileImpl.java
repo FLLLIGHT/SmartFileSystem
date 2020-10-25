@@ -19,9 +19,9 @@ public class FileImpl implements File {
     private final int MOVE_CURR = 0;
     private final int MOVE_HEAD = 1;
     private final int MOVE_TAIL = 2;
-    //todo: 如果在统一位置插入，则直接加在原来的后面
-    //todo: key是插入的位置（cursor）
-    //todo: 考虑在哪里初始化比较好
+    //如果在统一位置插入，则直接加在原来的后面
+    //key是插入的位置（cursor）
+    //考虑在哪里初始化比较好
     //为什么每个block（除最后）都要拉满：方便索引，直接可以计算出位置，不然不能直接通过位置计算出哪个logic block中
     private byte[] buffer;
 
@@ -45,12 +45,12 @@ public class FileImpl implements File {
     }
 
     //复制文件
-    public FileImpl(FileManager fileManager, Id id, String copyFrom){
-        this.fileManager = fileManager;
+    public FileImpl(FileManager fileManagerFrom, FileManager fileManagerTo, Id id, String copyFrom){
+        this.fileManager = fileManagerTo;
         this.id = id;
         this.currCursor = 0;
-        System.out.println(fileManager.getFile(new IdImpl(copyFrom)));
-        HashMap<String, String> valMap = ((FileImpl)fileManager.getFile(new IdImpl(copyFrom))).getMetaInfo();
+//        System.out.println(fileManagerFrom.getFile(new IdImpl(copyFrom)));
+        HashMap<String, String> valMap = ((FileImpl)fileManagerFrom.getFile(new IdImpl(copyFrom))).getMetaInfo();
         writeMeta(generateMeta(valMap).getBytes());
     }
 
@@ -66,7 +66,7 @@ public class FileImpl implements File {
 
     //从startIndex的位置开始读length个字节的数据
     private byte[] read(int length, long startIndex, boolean buffer){
-        if(currCursor+length>size()) throw new ErrorCode(ErrorCode.READ_OUT_OF_BOUNDARY);
+        if(startIndex+length>size()) throw new ErrorCode(ErrorCode.READ_OUT_OF_BOUNDARY);
         //如果是从buffer读，则直接读buffer即可。
         if(buffer){
             byte[] data = new byte[length];
@@ -99,6 +99,7 @@ public class FileImpl implements File {
                 try {
                     BlockManager blockManager = getBlockManagerById(logicBlock[0]);
                     Block block = blockManager.getBlock(new IdImpl(logicBlock[1]));
+//                    SmartUtils.smartHex(block);
                     System.arraycopy(block.read(), start, data, index, blockSize-start);
                     flag = true;
                     break;
@@ -145,7 +146,7 @@ public class FileImpl implements File {
         return read((int)size(), 0, false);
     }
 
-    //todo: 从文件的中间开始修改block，后面的全部需要改变
+    //从文件的中间开始修改block，后面的全部需要改变
     @Override
     public void write(byte[] b) {
         if(getBufferSetting().equals("yes")){
@@ -181,6 +182,7 @@ public class FileImpl implements File {
         move(b.length, MOVE_CURR);
     }
 
+    //从第startIndex个block开始，将b替换为之后的block的全部内容。
     private void write(byte[] b, int startIndex){
         int duplicationNumber = getDuplicationNumber();
         int blockSize = getBlockSize();
@@ -189,6 +191,7 @@ public class FileImpl implements File {
         int to;
 
         HashMap<String, String> valMap = getMetaInfo();
+        //修改valMap中对应项
         for(int i=startIndex; i<blockNumber+startIndex; i++){
             to = Math.min(from + blockSize, b.length);
             StringBuilder sb = new StringBuilder();
@@ -234,7 +237,7 @@ public class FileImpl implements File {
 
     @Override
     public long move(long offset, int where) {
-        //todo: 异常处理，指针位置大于文件大小
+        //异常处理，指针位置大于文件大小
         if(where==MOVE_CURR) {
             currCursor += offset;
         } else if(where==MOVE_HEAD) {
@@ -242,7 +245,7 @@ public class FileImpl implements File {
         } else if(where==MOVE_TAIL) {
             currCursor = size() + offset;
         }
-        if(currCursor>size()) throw new ErrorCode(ErrorCode.MOVE_OUT_OF_BOUNDARY);
+        if(currCursor>size()||currCursor<0) throw new ErrorCode(ErrorCode.MOVE_OUT_OF_BOUNDARY);
         return currCursor;
     }
 
@@ -268,6 +271,7 @@ public class FileImpl implements File {
             write(new byte[(int)(newSize-oldSize)]);
         }else if(newSize<oldSize){
             if(getBufferSetting().equals("yes")){
+                if(buffer==null) readAll();
                 byte[] newBuffer = new byte[(int)newSize];
                 System.arraycopy(buffer, 0, newBuffer, 0, (int)newSize);
                 buffer = newBuffer;
@@ -302,13 +306,6 @@ public class FileImpl implements File {
         return Integer.parseInt(FileUtils.getMetaInfo(filename, "file meta").get("block size"));
     }
 
-    //从file meta中读文件大小
-    private int getFileSize(){
-        String prefix = "out";
-        String filename = prefix +"/FileManager/"+fileManager.getId().toString()+"/"+id.toString()+".meta";
-        return Integer.parseInt(FileUtils.getMetaInfo(filename, "file meta").get("size"));
-    }
-
     //获取解析后的meta文件
     private HashMap<String, String> getMetaInfo(){
         String prefix = "out";
@@ -316,6 +313,7 @@ public class FileImpl implements File {
         return FileUtils.getMetaInfo(filename, "file meta");
     }
 
+    //valMap：meta文件->字符串之间的桥梁
     private String generateMeta(HashMap<String, String> valMap){
         StringBuilder sb = new StringBuilder();
         sb.append("size:").append(valMap.get("size")).append("\n");

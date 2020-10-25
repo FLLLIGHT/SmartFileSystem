@@ -38,8 +38,8 @@ public class FileManagerImpl implements FileManager {
     }
 
     @Override
-    public File copyFile(Id from, Id to) {
-        File file = new FileImpl(this, to, from.toString());
+    public File copyFile(Id from, Id to, FileManager fileManagerFrom) {
+        File file = new FileImpl(fileManagerFrom, this, to, from.toString());
         fileManagerMap.put(to, file);
         return file;
     }

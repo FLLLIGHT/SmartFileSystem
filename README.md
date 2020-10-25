@@ -1,6 +1,7 @@
 宣子涛 18302010015
 
->项目github仓库地址：https://github.com/FLLLIGHT/SmartFileSystem
+>项目github仓库地址：[https://github.com/FLLLIGHT/SmartFileSystem](https://github.com/FLLLIGHT/SmartFileSystem)
+>本项目开发/测试/运行环境：Linux (Ubuntu 20.04 LTS)
 # 一、项目功能完成情况概述
 
 1. 基础部分：全部功能/接口的实现。
